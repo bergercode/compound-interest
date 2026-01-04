@@ -6,6 +6,8 @@ A simple, intuitive web application to calculate compound interest over time.
 
 This project is a lightweight Compound Interest Calculator built with vanilla HTML, CSS, and JavaScript. It allows users to input an initial investment amount, an annual interest rate, and the duration of the investment in years to determine the future value of their investment.
 
+![Compound Interest Calculator Screenshot](Compound.jpg)
+
 ## Features
 
 *   **Easy Calculation**: Quickly calculate compound interest with a user-friendly interface.
