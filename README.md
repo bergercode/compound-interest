@@ -1,4 +1,32 @@
-# CompountInterest
-A basic compound interest calculator
+# Compound Interest Calculator
 
-<h3>Put in your amount to invest, the interest p/a, and the amount of years you'll invest</h3>
+A simple, intuitive web application to calculate compound interest over time.
+
+## Description
+
+This project is a lightweight Compound Interest Calculator built with vanilla HTML, CSS, and JavaScript. It allows users to input an initial investment amount, an annual interest rate, and the duration of the investment in years to determine the future value of their investment.
+
+## Features
+
+*   **Easy Calculation**: Quickly calculate compound interest with a user-friendly interface.
+*   **Real-time Results**: See the total amount accumulated instantly after clicking calculate.
+*   **Responsive Design**: Clean and accessible layout that works on various screen sizes.
+
+## Technologies Used
+
+*   **HTML5**: For the structural foundation of the application.
+*   **CSS3**: For styling and layout (custom `main.css`).
+*   **JavaScript**: For the calculation logic and DOM manipulation (`index.js`).
+
+## How to Use
+
+1.  Clone the repository or download the project files.
+2.  Open the `index.html` file in any modern web browser.
+3.  Enter the **Amount** (principal), **Interest Rate** (annual %), and **Years** (duration).
+4.  Click the **Calculate** button to see the result.
+
+## Project Structure
+
+*   `index.html`: The main entry point containing the HTML markup.
+*   `main.css`: Stylesheet for the visual presentation.
+*   `index.js`: Script file containing the calculation logic.
