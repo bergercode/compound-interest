@@ -9,6 +9,7 @@ This project is a lightweight Compound Interest Calculator built with vanilla HT
 ## Features
 
 *   **Easy Calculation**: Quickly calculate compound interest with a user-friendly interface.
+*   **Visual Growth Graph**: Interactive line chart visualizing the investment growth over time.
 *   **Real-time Results**: See the total amount accumulated instantly after clicking calculate.
 *   **Responsive Design**: Clean and accessible layout that works on various screen sizes.
 
@@ -17,6 +18,7 @@ This project is a lightweight Compound Interest Calculator built with vanilla HT
 *   **HTML5**: For the structural foundation of the application.
 *   **CSS3**: For styling and layout (custom `main.css`).
 *   **JavaScript**: For the calculation logic and DOM manipulation (`index.js`).
+*   **Chart.js**: Library for rendering the interactive data visualization.
 
 ## How to Use
 
