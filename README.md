@@ -36,3 +36,5 @@ This project is a lightweight Compound Interest Calculator built with vanilla HT
 *   `index.html`: The main entry point containing the HTML markup.
 *   `main.css`: Stylesheet for the visual presentation.
 *   `index.js`: Script file containing the calculation logic.
+
+## MIT Liscnce
