@@ -23,6 +23,7 @@ This project is a lightweight Compound Interest Calculator built with vanilla HT
 *   **CSS3**: For styling and layout (custom `main.css`).
 *   **JavaScript**: For the calculation logic and DOM manipulation (`index.js`).
 *   **Chart.js**: Library for rendering the interactive data visualization.
+*   **Antigravity**: Used Antigravity to style and add interest graph (20mins)
 
 ## How to Use
 
