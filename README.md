@@ -1,6 +1,7 @@
 # Compound Interest Calculator
 
 A simple, intuitive web application to calculate compound interest over time.
+Live on Github Pages - https://bergercode.github.io/compound-interest/
 
 ## Description
 
