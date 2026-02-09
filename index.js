@@ -81,7 +81,7 @@ function calculateInterest() {
 
   // 1. Calculate Growth of Starting Balance
   // A = P(1 + r)^t
-  futureValuePrincipal = startingBalance * Math.pow(1 + interestRate, years);
+  futureValuePrincipal = startingBalance * Math.pow(1 + interestRate / 12, 12 * years);
 
   // 2. Calculate Growth of Contributions
   if (frequency === 'once') {
@@ -133,7 +133,7 @@ function generateChart(startingBalance, contribution, frequency, rate, years) {
     labels.push(`Year ${i}`);
 
     // Principal Growth
-    const principalGrowth = startingBalance * Math.pow(1 + rate, i);
+    const principalGrowth = startingBalance * Math.pow(1 + rate / 12, 12 * i);
     const principalInvested = startingBalance;
 
     // Contribution Growth
