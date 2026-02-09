@@ -26,14 +26,17 @@
   <div class="container">
     <h1>Compound Interest Calculator</h1>
     <form>
-      <label for="amount">Amount ($):</label>
-      <input type="number" id="amount" name="amount" required placeholder="e.g. 5000">
+      <label for="starting-balance">Starting Balance ($):</label>
+      <input type="text" id="starting-balance" name="starting-balance" placeholder="e.g. 5,000">
 
-      <label for="frequency">Deposit Frequency:</label>
+      <label for="amount">Additional Contribution ($):</label>
+      <input type="text" id="amount" name="amount" placeholder="e.g. 500">
+
+      <label for="frequency">Contribution Frequency:</label>
       <select id="frequency" name="frequency">
-        <option value="once">One-time Investment</option>
-        <option value="monthly">Monthly Deposit</option>
-        <option value="yearly">Yearly Deposit</option>
+        <option value="once">None</option>
+        <option value="monthly">Monthly</option>
+        <option value="yearly">Yearly</option>
       </select>
 
       <label for="interest-rate">Interest Rate (%):</label>

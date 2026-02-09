@@ -1,3 +1,4 @@
+const startingBalanceInput = document.getElementById("starting-balance");
 const amountInput = document.getElementById("amount");
 const frequencyInput = document.getElementById("frequency");
 const interestRateInput = document.getElementById("interest-rate");
@@ -14,14 +15,57 @@ const formatter = new Intl.NumberFormat('en-US', {
   minimumFractionDigits: 2
 });
 
+// Format input with commas while typing
+function formatNumberInput(input) {
+  // 1. Get cursor position and length before change
+  const cursorPosition = input.selectionStart;
+  const originalLength = input.value.length;
+
+  // 2. Remove non-numeric chars (except dot)
+  let value = input.value.replace(/,/g, '');
+
+  // 3. Check validity (regex: allow digits and one dot)
+  if (!/^\d*\.?\d*$/.test(value)) {
+    // If invalid char added, just strip non-numeric
+    value = value.replace(/[^\d.]/g, '');
+  }
+
+  // 4. Format with commas
+  if (value) {
+    const parts = value.split('.');
+    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+    input.value = parts.join('.');
+  } else {
+    input.value = '';
+  }
+
+  // 5. Restore cursor position
+  // Calculate new position based on added/removed commas
+  const newLength = input.value.length;
+  const newPosition = cursorPosition + (newLength - originalLength);
+  input.setSelectionRange(newPosition, newPosition);
+}
+
+function parseFormattedValue(value) {
+  if (!value) return 0;
+  return parseFloat(value.replace(/,/g, '')) || 0;
+}
+
+// Add event listeners for formatting
+[startingBalanceInput, amountInput].forEach(input => {
+  input.addEventListener('input', () => formatNumberInput(input));
+});
+
 function calculateInterest() {
-  const amount = parseFloat(amountInput.value);
+  const startingBalance = parseFormattedValue(startingBalanceInput.value);
+  const contribution = parseFormattedValue(amountInput.value);
   const frequency = frequencyInput.value;
   const interestRate = parseFloat(interestRateInput.value) / 100;
   let years = parseInt(yearsInput.value);
 
-  if (isNaN(amount) || isNaN(interestRate) || isNaN(years)) {
-    resultDiv.innerHTML = "<span style='color: #ff6b6b;'>Please enter valid numbers.</span>";
+  // Validate that we have at least some numbers to work with, but allow 0s
+  if (isNaN(interestRate) || isNaN(years)) {
+    resultDiv.innerHTML = "<span style='color: #ff6b6b;'>Please enter valid interest rate and years.</span>";
     return;
   }
 
@@ -30,35 +74,45 @@ function calculateInterest() {
     yearsInput.value = 100;
   }
 
-  let total = 0;
+  let futureValuePrincipal = 0;
+  let futureValueContributions = 0;
+  let totalInvestedPrincipal = startingBalance;
+  let totalInvestedContributions = 0;
 
+  // 1. Calculate Growth of Starting Balance
+  // A = P(1 + r)^t
+  futureValuePrincipal = startingBalance * Math.pow(1 + interestRate, years);
+
+  // 2. Calculate Growth of Contributions
   if (frequency === 'once') {
-    // A = P(1 + r)^t
-    total = amount * Math.pow(1 + interestRate, years);
+    // None selected, so no regular contributions
+    futureValueContributions = 0;
+    totalInvestedContributions = 0;
   } else if (frequency === 'monthly') {
     // FV = PMT * ((1 + r/n)^(nt) - 1) / (r/n)
     const n = 12;
     const ratePerPeriod = interestRate / n;
     const periods = n * years;
-    total = amount * ((Math.pow(1 + ratePerPeriod, periods) - 1) / ratePerPeriod);
+
+    if (interestRate === 0) {
+      futureValueContributions = contribution * periods;
+    } else {
+      futureValueContributions = contribution * ((Math.pow(1 + ratePerPeriod, periods) - 1) / ratePerPeriod);
+    }
+    totalInvestedContributions = contribution * periods;
+
   } else if (frequency === 'yearly') {
     // FV = PMT * ((1 + r)^t - 1) / r
     if (interestRate === 0) {
-      total = amount * years;
+      futureValueContributions = contribution * years;
     } else {
-      total = amount * ((Math.pow(1 + interestRate, years) - 1) / interestRate);
+      futureValueContributions = contribution * ((Math.pow(1 + interestRate, years) - 1) / interestRate);
     }
+    totalInvestedContributions = contribution * years;
   }
 
-  let totalInvested = 0;
-  if (frequency === 'once') {
-    totalInvested = amount;
-  } else if (frequency === 'monthly') {
-    totalInvested = amount * 12 * years;
-  } else if (frequency === 'yearly') {
-    totalInvested = amount * years;
-  }
-
+  const total = futureValuePrincipal + futureValueContributions;
+  const totalInvested = totalInvestedPrincipal + totalInvestedContributions;
   const totalInterest = total - totalInvested;
 
   resultDiv.innerHTML = `
@@ -67,54 +121,52 @@ function calculateInterest() {
     <div style="font-size: 0.9rem; color: #b0c4de;">Total Invested: <span>${formatter.format(totalInvested)}</span></div>
   `;
 
-  generateChart(amount, frequency, interestRate, years);
+  generateChart(startingBalance, contribution, frequency, interestRate, years);
 }
 
-function generateChart(amount, frequency, rate, years) {
+function generateChart(startingBalance, contribution, frequency, rate, years) {
   const labels = [];
   const data = [];
   const investedData = [];
 
   for (let i = 0; i <= years; i++) {
     labels.push(`Year ${i}`);
-    let yearlyAmount = 0;
-    let yearlyInvested = 0;
 
-    if (frequency === 'once') {
-      // Compound
-      yearlyAmount = amount * Math.pow(1 + rate, i);
-      // Invested (Principal remains constant)
-      yearlyInvested = amount;
-    } else if (frequency === 'monthly') {
+    // Principal Growth
+    const principalGrowth = startingBalance * Math.pow(1 + rate, i);
+    const principalInvested = startingBalance;
+
+    // Contribution Growth
+    let contributionGrowth = 0;
+    let contributionInvested = 0;
+
+    if (frequency === 'monthly') {
       const n = 12;
       const ratePerPeriod = rate / n;
       const periods = n * i;
 
-      // Compound
-      if (i === 0) {
-        yearlyAmount = 0;
+      if (rate === 0) {
+        contributionGrowth = contribution * periods;
       } else {
-        yearlyAmount = amount * ((Math.pow(1 + ratePerPeriod, periods) - 1) / ratePerPeriod);
+        if (i > 0) {
+          contributionGrowth = contribution * ((Math.pow(1 + ratePerPeriod, periods) - 1) / ratePerPeriod);
+        }
       }
-
-      // Invested (Simple accumulation)
-      yearlyInvested = amount * 12 * i;
+      contributionInvested = contribution * periods;
 
     } else if (frequency === 'yearly') {
-      // Compound
       if (rate === 0) {
-        yearlyAmount = amount * i;
+        contributionGrowth = contribution * i;
       } else {
-        if (i === 0) yearlyAmount = 0;
-        else yearlyAmount = amount * ((Math.pow(1 + rate, i) - 1) / rate);
+        if (i > 0) {
+          contributionGrowth = contribution * ((Math.pow(1 + rate, i) - 1) / rate);
+        }
       }
-
-      // Invested
-      yearlyInvested = amount * i;
+      contributionInvested = contribution * i;
     }
 
-    data.push(yearlyAmount);
-    investedData.push(yearlyInvested);
+    data.push(principalGrowth + contributionGrowth);
+    investedData.push(principalInvested + contributionInvested);
   }
 
   if (chart) {
@@ -192,8 +244,6 @@ function generateChart(amount, frequency, rate, years) {
             color: '#a0a0a0',
             font: { family: "'Inter', sans-serif" },
             callback: function (value) {
-              // Use formatter but compact for axis if needed? 
-              // Standard format is requested: "1,000,000"
               return new Intl.NumberFormat('en-US', {
                 style: 'currency',
                 currency: 'USD',
