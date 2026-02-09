@@ -1,4 +1,5 @@
-const amountInput = document.getElementById("amount");
+const startingBalanceInput = document.getElementById("starting-balance");
+const depositAmountInput = document.getElementById("amount");
 const frequencyInput = document.getElementById("frequency");
 const interestRateInput = document.getElementById("interest-rate");
 const yearsInput = document.getElementById("years");
@@ -14,109 +15,102 @@ const formatter = new Intl.NumberFormat('en-US', {
   minimumFractionDigits: 2
 });
 
+// Button is the only trigger
+calculateButton.addEventListener("click", calculateInterest);
+
 function calculateInterest() {
-  const amount = parseFloat(amountInput.value);
+  // 1. Sanitize Inputs (prevent negative numbers)
+  const startingBalance = Math.max(0, parseFloat(startingBalanceInput.value) || 0);
+  const depositAmount = Math.max(0, parseFloat(depositAmountInput.value) || 0);
   const frequency = frequencyInput.value;
-  const interestRate = parseFloat(interestRateInput.value) / 100;
-  let years = parseInt(yearsInput.value);
+  const interestRate = Math.max(0, parseFloat(interestRateInput.value) || 0) / 100;
+  let years = Math.max(1, parseInt(yearsInput.value) || 0);
 
-  if (isNaN(amount) || isNaN(interestRate) || isNaN(years)) {
-    resultDiv.innerHTML = "<span style='color: #ff6b6b;'>Please enter valid numbers.</span>";
-    return;
-  }
-
+  // Enforce max years
   if (years > 100) {
     years = 100;
-    yearsInput.value = 100;
+    // We don't force update the UI value while typing to avoid annoyance, 
+    // unless focus is lost, but for calculation we cap it.
   }
 
-  let total = 0;
+  // Determine periods per year
+  let n = 12;
+  if (frequency === 'weekly') n = 52;
+  else if (frequency === 'fortnightly') n = 26;
+  else if (frequency === 'monthly') n = 12;
+  else if (frequency === 'annually') n = 1;
 
-  if (frequency === 'once') {
-    // A = P(1 + r)^t
-    total = amount * Math.pow(1 + interestRate, years);
-  } else if (frequency === 'monthly') {
-    // FV = PMT * ((1 + r/n)^(nt) - 1) / (r/n)
-    const n = 12;
-    const ratePerPeriod = interestRate / n;
-    const periods = n * years;
-    total = amount * ((Math.pow(1 + ratePerPeriod, periods) - 1) / ratePerPeriod);
-  } else if (frequency === 'yearly') {
-    // FV = PMT * ((1 + r)^t - 1) / r
-    if (interestRate === 0) {
-      total = amount * years;
-    } else {
-      total = amount * ((Math.pow(1 + interestRate, years) - 1) / interestRate);
-    }
-  }
+  // 2. Calculate All Data Points (Refactored)
+  const { labels, totalData, investedData, interestData, finalTotal, finalInvested, finalInterest } = calculateData(
+    startingBalance,
+    depositAmount,
+    n,
+    interestRate,
+    years
+  );
 
-  let totalInvested = 0;
-  if (frequency === 'once') {
-    totalInvested = amount;
-  } else if (frequency === 'monthly') {
-    totalInvested = amount * 12 * years;
-  } else if (frequency === 'yearly') {
-    totalInvested = amount * years;
-  }
-
-  const totalInterest = total - totalInvested;
-
+  // 3. Update DOM
   resultDiv.innerHTML = `
-    <div style="margin-bottom: 0.5rem;">Total Value: <strong style="font-size: 1.2em;">${formatter.format(total)}</strong></div>
-    <div style="font-size: 0.9rem; color: #b0c4de;">Total Interest Earned: <span style="color: #4facfe;">${formatter.format(totalInterest)}</span></div>
-    <div style="font-size: 0.9rem; color: #b0c4de;">Total Invested: <span>${formatter.format(totalInvested)}</span></div>
+    <div style="margin-bottom: 0.5rem;">Total Value: <strong style="font-size: 1.2em;">${formatter.format(finalTotal)}</strong></div>
+    <div style="font-size: 0.9rem; color: #b0c4de;">Total Interest Earned: <span style="color: #4facfe;">${formatter.format(finalInterest)}</span></div>
+    <div style="font-size: 0.9rem; color: #b0c4de;">Total Invested: <span>${formatter.format(finalInvested)}</span></div>
   `;
 
-  generateChart(amount, frequency, interestRate, years);
+  // 4. Update Chart
+  updateChart(labels, totalData, investedData, interestData);
 }
 
-function generateChart(amount, frequency, rate, years) {
+function calculateData(startingBalance, depositAmount, n, rate, years) {
   const labels = [];
-  const data = [];
+  const totalData = [];
   const investedData = [];
+  const interestData = []; // Derived: Total - Invested
+
+  const ratePerPeriod = rate / n;
 
   for (let i = 0; i <= years; i++) {
     labels.push(`Year ${i}`);
-    let yearlyAmount = 0;
-    let yearlyInvested = 0;
 
-    if (frequency === 'once') {
-      // Compound
-      yearlyAmount = amount * Math.pow(1 + rate, i);
-      // Invested (Principal remains constant)
-      yearlyInvested = amount;
-    } else if (frequency === 'monthly') {
-      const n = 12;
-      const ratePerPeriod = rate / n;
-      const periods = n * i;
+    const totalPeriods = n * i;
 
-      // Compound
-      if (i === 0) {
-        yearlyAmount = 0;
-      } else {
-        yearlyAmount = amount * ((Math.pow(1 + ratePerPeriod, periods) - 1) / ratePerPeriod);
-      }
-
-      // Invested (Simple accumulation)
-      yearlyInvested = amount * 12 * i;
-
-    } else if (frequency === 'yearly') {
-      // Compound
-      if (rate === 0) {
-        yearlyAmount = amount * i;
-      } else {
-        if (i === 0) yearlyAmount = 0;
-        else yearlyAmount = amount * ((Math.pow(1 + rate, i) - 1) / rate);
-      }
-
-      // Invested
-      yearlyInvested = amount * i;
+    // Principal Growth (Compound Interest)
+    let principalGrowth = startingBalance;
+    if (rate > 0) {
+      principalGrowth = startingBalance * Math.pow(1 + ratePerPeriod, totalPeriods);
     }
 
-    data.push(yearlyAmount);
-    investedData.push(yearlyInvested);
+    // Deposits Growth (Annuity Due: Deposits at START of period)
+    // Formula: PMT * [ ((1+r/n)^(nt) - 1) / (r/n) ] * (1+r/n)
+    let depositsGrowth = 0;
+    if (rate === 0) {
+      depositsGrowth = depositAmount * totalPeriods;
+    } else {
+      depositsGrowth = depositAmount *
+        ((Math.pow(1 + ratePerPeriod, totalPeriods) - 1) / ratePerPeriod) *
+        (1 + ratePerPeriod);
+    }
+
+    const totalValue = principalGrowth + depositsGrowth;
+    const totalInvested = startingBalance + (depositAmount * totalPeriods);
+    const totalInterest = totalValue - totalInvested;
+
+    totalData.push(totalValue);
+    investedData.push(totalInvested);
+    interestData.push(totalInterest);
   }
 
+  return {
+    labels,
+    totalData,
+    investedData,
+    interestData,
+    finalTotal: totalData[totalData.length - 1],
+    finalInvested: investedData[investedData.length - 1],
+    finalInterest: interestData[interestData.length - 1]
+  };
+}
+
+function updateChart(labels, totalData, investedData, interestData) {
   if (chart) {
     chart.destroy();
   }
@@ -128,24 +122,26 @@ function generateChart(amount, frequency, rate, years) {
       datasets: [
         {
           label: 'Total with Interest',
-          data: data,
+          data: totalData, // Back to Total Value
           borderColor: '#4facfe',
-          backgroundColor: 'rgba(79, 172, 254, 0.2)',
+          backgroundColor: 'rgba(79, 172, 254, 0.2)', // Lower opacity for overlap
           borderWidth: 3,
-          pointBackgroundColor: '#00f2fe',
+          pointRadius: 0,
+          pointHoverRadius: 4,
           fill: true,
           tension: 0.4
         },
         {
-          label: 'Total Invested (No Interest)',
+          label: 'Total Invested',
           data: investedData,
           borderColor: '#ff9a9e',
-          backgroundColor: 'rgba(255, 154, 158, 0.2)',
+          backgroundColor: 'rgba(255, 154, 158, 0.2)', // Lower opacity for overlap
           borderWidth: 3,
-          pointBackgroundColor: '#ff6b6b',
+          pointRadius: 0,
+          pointHoverRadius: 4,
           fill: true,
           tension: 0.4,
-          borderDash: [5, 5]
+          borderDash: [5, 5] // Add back dashed line for distinction
         }
       ]
     },
@@ -162,7 +158,7 @@ function generateChart(amount, frequency, rate, years) {
         tooltip: {
           mode: 'index',
           intersect: false,
-          backgroundColor: 'rgba(0, 0, 0, 0.8)',
+          backgroundColor: 'rgba(0, 0, 0, 0.9)',
           titleColor: '#fff',
           bodyColor: '#fff',
           callbacks: {
@@ -175,33 +171,36 @@ function generateChart(amount, frequency, rate, years) {
                 label += formatter.format(context.parsed.y);
               }
               return label;
-            }
+            },
+            // Removed footer as Total is now a dataset
           }
         }
       },
       scales: {
         x: {
           ticks: {
+            maxTicksLimit: 10, // Avoid cluttering x-axis
             color: '#a0a0a0',
             font: { family: "'Inter', sans-serif" }
           },
-          grid: { color: 'rgba(255, 255, 255, 0.1)' }
+          grid: { color: 'rgba(255, 255, 255, 0.05)' }
         },
         y: {
+          stacked: false, // Disable stacking
+          beginAtZero: true,
           ticks: {
             color: '#a0a0a0',
             font: { family: "'Inter', sans-serif" },
             callback: function (value) {
-              // Use formatter but compact for axis if needed? 
-              // Standard format is requested: "1,000,000"
               return new Intl.NumberFormat('en-US', {
                 style: 'currency',
                 currency: 'USD',
-                maximumSignificantDigits: 3
+                notation: "compact",
+                compactDisplay: "short"
               }).format(value);
             }
           },
-          grid: { color: 'rgba(255, 255, 255, 0.1)' }
+          grid: { color: 'rgba(255, 255, 255, 0.05)' }
         }
       },
       interaction: {
@@ -213,4 +212,5 @@ function generateChart(amount, frequency, rate, years) {
   });
 }
 
-calculateButton.addEventListener("click", calculateInterest);
+// Initial Calculation on Load (optional) - Removed to wait for button click
+// calculateInterest();
